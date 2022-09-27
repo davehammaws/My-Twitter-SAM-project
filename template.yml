@@ -14,6 +14,10 @@ Parameters:
     Type: String
     Description: The name for a project pipeline stage, such as Staging or Prod, for which resources are provisioned and deployed.
     Default: ''
+  MySQLMasterUserName:
+    Type: String
+    Default: admin
+    Description: Database admin user name for MySQL
 
 Globals:
   Function:
@@ -78,12 +82,6 @@ Resources:
             Method: get 
 # https://levelup.gitconnected.com/create-aws-rds-mysql-instance-with-a-secured-master-password-using-cloudformation-template-c3a767062972
 # Adding secured mysql instance
-Parameters:
-  MySQLMasterUserName:
-    Type: String
-    Default: admin
-    Description: Database admin user name for MySQL
-Resources:
   MySQLSecretKey:
     Type: AWS::KMS::Key
     Properties:
