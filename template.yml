@@ -75,4 +75,52 @@ Resources:
           Type: Api
           Properties:
             Path: /hello/{name}
-            Method: get
+            Method: get 
+# https://levelup.gitconnected.com/create-aws-rds-mysql-instance-with-a-secured-master-password-using-cloudformation-template-c3a767062972
+# Adding secured mysql instance
+Parameters:
+  MySQLMasterUserName:
+    Type: String
+    Default: admin
+    Description: Database admin user name for MySQL
+Resources:
+  MySQLSecretKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: "kms:*"
+            Resource: "*"
+
+  MySQLSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      KmsKeyId: !Ref MySQLSecretKey
+      GenerateSecretString:
+        SecretStringTemplate: !Join [ '', [ '{"username": "', !Ref MySQLMasterUserName, '"}' ] ]
+        GenerateStringKey: 'password'
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+
+  MySQLInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref MySQLDBInstanceClass
+      DBName: !Ref MySQLDBName
+      Engine: "MySQL"
+      EngineVersion: "8.0.20"
+      MasterUsername: !Ref MySQLMasterUserName
+      MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref MySQLSecret, ':SecretString:password}}' ] ]
+      StorageType: gp2
+      AllocatedStorage: 20
+      AvailabilityZone: !GetAtt PrivateSubnet1.AvailabilityZone
+      MultiAZ: False
+      Port: !Ref MySQLPort
+      DBSubnetGroupName: !Ref MySQLSubnetGroup
+      PubliclyAccessible: True
+      VPCSecurityGroups:
+        - !Ref MySQLSecurityGroup
